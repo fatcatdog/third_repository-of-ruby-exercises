@@ -4,6 +4,7 @@
 # factors of a given number.
 
 def factors(num)
+(1..num).select {|x| num % x == 0 }
 end
 
 # ### Bubble Sort
@@ -47,12 +48,49 @@ end
 
 class Array
   def bubble_sort!
-  end
+   # Without a proc
+   sorted = false
+   until sorted
+     sorted = true
 
-  def bubble_sort(&prc)
-  end
+     each_index do |i|
+       next if i + 1 == self.length
+       j = i + 1
+       if self[i] > self[j]
+         sorted = false
+         self[i], self[j] = self[j], self[i]
+       end
+     end
+   end
+
+   self
+ end
+
+ def bubble_sort!(&prc)
+   # With a proc
+   prc ||= Proc.new { |x, y| x <=> y }
+
+   sorted = false
+   until sorted
+     sorted = true
+
+     each_index do |i|
+       next if i + 1 == self.length
+       j = i + 1
+       if prc.call(self[i], self[j]) == 1
+         sorted = false
+         self[i], self[j] = self[j], self[i]
+       end
+     end
+   end
+
+   self
+ end
+
+ def bubble_sort(&prc)
+   self.dup.bubble_sort!(&prc)
+ end
 end
-
 # ### Substrings and Subwords
 #
 # Write a method, `substrings`, that will take a `String` and return an
@@ -65,18 +103,28 @@ end
 # `substrings`, filtering it to return only valid words. To do this,
 # `subwords` will accept both a string and a dictionary (an array of
 # words).
-
 def substrings(string)
+  substring_list = []
+
+  (0...string.length).each do |i|
+    (i...string.length).each do |j|
+      substring_list << string[i..j] unless substring_list.include?(string[i..j])
+    end
+  end
+
+  substring_list
 end
 
 def subwords(word, dictionary)
+  substrings_list = substrings(word)
+  substrings_list.select { |word| dictionary.include?(word) }
 end
-
 # ### Doubler
 # Write a `doubler` method that takes an array of integers and returns an
 # array with the original elements multiplied by two.
 
 def doubler(array)
+  array.map {|x| x*2 }
 end
 
 # ### My Each
@@ -104,6 +152,8 @@ end
 
 class Array
   def my_each(&prc)
+    self.count.times { |i| prc.call(self[i]) }
+    self
   end
 end
 
@@ -122,12 +172,33 @@ end
 
 class Array
   def my_map(&prc)
+    new_array = []
+
+    self.my_each do |el|
+      new_array << prc.call(el)
+    end
+
+    new_array
   end
+
 
   def my_select(&prc)
+    new_array = []
+
+    my_each do |el|
+      new_array << el if prc.call(el)
+    end
+
+    new_array
   end
 
-  def my_inject(&blk)
+
+  def my_inject(&prc)
+    base = self[0]
+
+    self.drop(1).my_each{ |x| base = prc.call(base, x)}
+
+    base
   end
 end
 
@@ -141,4 +212,5 @@ end
 # ```
 
 def concatenate(strings)
+  strings.inject("") { |sentence, str| sentence += str }
 end
